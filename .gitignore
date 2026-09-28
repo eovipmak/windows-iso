@@ -1,0 +1,2 @@
+# Ignore ISO images (large binaries, rebuilt from the windows-10-ltsc / windows-server-2019 templates)
+*.iso

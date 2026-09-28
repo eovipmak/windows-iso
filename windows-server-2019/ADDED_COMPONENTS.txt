@@ -1,0 +1,49 @@
+Windows Server 2019 unattended ISO - added components
+=====================================================
+
+This ISO contains the following additions on top of the stock
+Microsoft image (volume SSS_X64FREE_EN-US_DV9, Windows Server
+2019 Standard/Datacenter Evaluation, Desktop Experience at
+/Index:2):
+
+1. autounattend.xml (ISO root)
+   Schneegans unattend-generator answer file, extended with:
+   - C:\Windows\Setup\Scripts\InstallVirtioDrivers.ps1
+     Installs vioscsi/viostor/NetKVM drivers from \$WinPEDriver$\
+     via pnputil during specialize (boot-critical drivers are also
+     injected offline into the applied image via DISM by the
+     answer file's WinPE script, and loaded in WinPE via drvload).
+   - C:\Windows\Setup\Scripts\InstallCloudbaseInit.ps1
+     Silently installs CloudbaseInitSetup_x64.msi from the ISO
+     (/qn /norestart, runs as LocalSystem), applies the staged
+     CloudStack configuration and sets the cloudbase-init service
+     to Automatic so it runs on every boot.
+   - C:\Windows\Setup\Scripts\cloudbase-init.conf and
+     cloudbase-init-unattend.conf
+     CloudStack datasource first
+     (metadata_services=...cloudstack.CloudStack,...configdrive...),
+     inject_user_password=true with the SetUserPasswordPlugin
+     enabled so Administrator password changes via CloudStack
+     (including reset from the UI) are applied.
+
+2. \$WinPEDriver$\ (ISO root)
+   VirtIO storage/network drivers (vioscsi, viostor, NetKVM),
+   virtio-win 0.1.302 (x64, all Windows-version subfolders).
+   Picked up automatically by the answer file's WinPE script
+   (drvload + DISM /Add-Driver /Recurse); Server 2019 (build
+   17763) is served by the w10/2k19 subfolders.
+
+3. CloudbaseInitSetup_x64.msi (ISO root)
+   Cloudbase-Init 1.1.8 installer (x64), consumed by
+   InstallCloudbaseInit.ps1 during FirstLogon.
+
+Install flow is otherwise unchanged: fully unattended, one
+automatic logon as Administrator, then ready for testing.
+In CloudStack, cloudbase-init manages hostname, network,
+user password and userdata on subsequent boots via the
+virtual-router metadata service (with ConfigDrive fallback).
+
+References:
+- https://github.com/apache/cloudstack/discussions/11792
+- https://cloudbase.it/cloudbase-init/
+- https://schneegans.de/windows/unattend-generator/
