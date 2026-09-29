@@ -20,11 +20,24 @@ Microsoft image (volume SSS_X64FREE_EN-US_DV9, Windows Server
      to Automatic so it runs on every boot.
    - C:\Windows\Setup\Scripts\cloudbase-init.conf and
      cloudbase-init-unattend.conf
-     CloudStack datasource first
-     (metadata_services=...cloudstack.CloudStack,...configdrive...),
+     CloudStack datasource only
+     (metadata_services=...cloudstack.CloudStack), so the virtual
+     router password server (port 8080) is always used. The
+     ConfigDrive fallback was removed: it cannot return admin_pass
+     (CloudStack puts the password in vm_password.txt /
+     vendor_data.json instead), so SetUserPasswordPlugin would
+     generate a random password and lock out the Administrator.
+     CreateUserPlugin is disabled too: the Administrator account
+     already exists in this full install, and running it only
+     reset that account to a random password before
+     SetUserPasswordPlugin could inject the CloudStack one.
      inject_user_password=true with the SetUserPasswordPlugin
      enabled so Administrator password changes via CloudStack
-     (including reset from the UI) are applied.
+     (including reset from the UI) are applied on every boot.
+   - Specialize.ps1 disables the local "Password must meet
+     complexity requirements" policy via secedit
+     (PasswordComplexity = 0), so CloudStack-injected simple
+     passwords are not rejected by NetUserSetInfo.
 
 2. \$WinPEDriver$\ (ISO root)
    VirtIO storage/network drivers (vioscsi, viostor, NetKVM),
@@ -41,7 +54,7 @@ Install flow is otherwise unchanged: fully unattended, one
 automatic logon as Administrator, then ready for testing.
 In CloudStack, cloudbase-init manages hostname, network,
 user password and userdata on subsequent boots via the
-virtual-router metadata service (with ConfigDrive fallback).
+virtual-router metadata service.
 
 References:
 - https://github.com/apache/cloudstack/discussions/11792
